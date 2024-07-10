@@ -1,10 +1,13 @@
-from rest_framework import serializers # Importamos el módulo serializers de la librería rest_framework
-from .models import Artista, Album, Genero # Importamos los modelos que vamos a serializar
+from rest_framework import serializers
+from .models import Artista, Album, Genero, UserProfile
+from django.contrib.auth.models import User
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from django.contrib.auth.password_validation import validate_password
 
-class GeneroSerializer(serializers.ModelSerializer): # Creamos una clase que hereda de serializers.ModelSerializer
-    class Meta: # Definimos la clase Meta
-        model = Genero # Indicamos el modelo que vamos a serializar
-        fields = '__all__' # Indicamos que vamos a serializar todos los campos del modelo
+class GeneroSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Genero
+        fields = '__all__'
 
 class ArtistaSerializer(serializers.ModelSerializer):
     class Meta:
@@ -12,8 +15,8 @@ class ArtistaSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class AlbumSerializer(serializers.ModelSerializer):
-    artista = ArtistaSerializer() # Indicamos que vamos a serializar el artista
-    genero = GeneroSerializer(many=True) # Indicamos que vamos a serializar los géneros
+    artista = ArtistaSerializer()
+    genero = GeneroSerializer(many=True)
     class Meta:
         model = Album
         fields = '__all__'
@@ -26,3 +29,50 @@ class AlbumCreateUpdateSerializer(serializers.ModelSerializer):
         model = Album
         fields = '__all__'
 
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = ['user_type']
+
+class UserSerializer(serializers.ModelSerializer):
+    userprofile = UserProfileSerializer()
+
+    class Meta:
+        model = User
+        fields = ('id', 'username', 'email', 'userprofile')
+
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        serializer = UserSerializer(self.user).data
+        for k, v in serializer.items():
+            data[k] = v
+        return data
+
+class RegisterSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
+    password2 = serializers.CharField(write_only=True, required=True)
+    user_type = serializers.ChoiceField(choices=UserProfile.USER_TYPE_CHOICES, required=True, write_only=True)
+
+    class Meta:
+        model = User
+        fields = ('username', 'email', 'password', 'password2', 'user_type')
+
+    def validate(self, attrs):
+        if attrs['password'] != attrs['password2']:
+            raise serializers.ValidationError({"password": "Password fields didn't match."})
+        return attrs
+
+    def create(self, validated_data):
+        user_type = validated_data.pop('user_type')
+        user = User.objects.create(
+            username=validated_data['username'],
+            email=validated_data['email'],
+        )
+        user.set_password(validated_data['password'])
+        user.save()
+
+        # Crear el perfil de usuario con el user_type correcto
+        UserProfile.objects.create(user=user, user_type=user_type)
+
+        return user
