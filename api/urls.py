@@ -11,10 +11,10 @@ router.register('generos', GeneroViewSet) # Registramos la vista de Genero
 
 urlpatterns = [
     path('', include(router.urls)), # Incluimos las URLs de la API
-    path('token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-    path('register/', RegisterView.as_view(), name='register'),
-    path('user/', UserDetailView.as_view(), name='user-detail'),
+    path('token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'), # Definimos la URL para obtener el token de acceso
+    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'), # Definimos la URL para refrescar el token de acceso
+    path('register/', RegisterView.as_view(), name='register'), # Definimos la URL para registrar un nuevo usuario
+    path('user/', UserDetailView.as_view(), name='user-detail'), # Definimos la URL para obtener los detalles del usuario
 ]
 
 
