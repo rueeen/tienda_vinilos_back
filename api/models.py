@@ -26,16 +26,17 @@ class Album(models.Model):
     def __str__(self):
         return self.titulo
     
+class UserType(models.Model):
+    user_type = models.CharField(max_length=10, unique=True)  # Remove user field
+
+    def __str__(self):
+        return self.user_type
+
 class UserProfile(models.Model):
-    USER_TYPE_CHOICES = (
-        ('client', 'Client'),
-        ('employee', 'Employee'),
-    )
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    user_type = models.CharField(max_length=10, choices=USER_TYPE_CHOICES)
+    user_type = models.ForeignKey(UserType, on_delete=models.RESTRICT, null=True, blank=True)
 
     def __str__(self):
         return self.user.username
-
 
     
